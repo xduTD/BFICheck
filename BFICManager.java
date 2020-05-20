@@ -9,6 +9,7 @@ import java.util.Scanner;
  */
 
 public class BFICManager {
+	//arraylist存储当前所有account账号，并且序列化存储在硬盘中
 	//构造singleton单例模式
 	private static BFICManager managerSingleton = null;
 	//构造器私有化，只有内部方法才可调用， 保证singleton的实现
@@ -28,6 +29,8 @@ public class BFICManager {
 		Scanner scan = new Scanner(System.in);
 		//BFICManager实例化
 		BFICManager systemManager = BFICManager.getInstance();
+		//加载已保存到硬盘的对象（反序列化）
+		ArrayList<BFICAccountImpl> accountList = readLocal();
 		//前往操作界面
 		systemManager.operatingInterface(scan);
 	}
@@ -57,15 +60,35 @@ public class BFICManager {
 	}
 	
 	
+	//加载文件中已创建对象
+	private ArrayList<BFICAccountImpl> readLocal(){
+		
+	}
+	
+	
 	//创建账号
 	private void registerAccount(Scanner scan) {
 		String prompt = null;
 		String corporate = null;//法人
 		String email = null;
 		String verifyNumber = null; //Id or License
-		String privateKey = null;
 		
+		System.out.println("Register Interface");
+		//scan corporate
+		prompt = "Input the corporate/person name of this account:";
+		corporate = BFICUtilities.scanStr(scan, prompt);
+		//scan email
+		prompt = "Input your email for concat:";
+		email = BFICUtilities.scanEmail(scan, prompt);
+		//scan verifyNumber
+		prompt = "Input your personal id number or business license number for verification only:";
+		verifyNumber = BFICUtilities.scanStr(scan, prompt);
 		
+		Boolean verification = BFICUtilities.checkInfor(corporate, email, verifyNumber);
+		//验证通过则创建账户，不通过则提示失败
+		if (verification) {
+			BFICAccount 
+		}
 	}
 	
 	
