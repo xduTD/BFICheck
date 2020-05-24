@@ -23,4 +23,9 @@ public interface BFICAccount {
 	//在已有block的条件下再次验证信息   创建分叉Block（后面不允许有新的Block）
 	public void reVerify();
 	
+	//对外传送corporate name
+	public String getName();
+	
+	//登录验证时接收传入password并核验
+	public boolean checkPassword(String passwd);
 }

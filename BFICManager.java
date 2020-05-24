@@ -1,5 +1,7 @@
 package BFICheck;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 /*
@@ -9,7 +11,8 @@ import java.util.Scanner;
  */
 
 public class BFICManager {
-	//arraylist存储当前所有account账号，并且序列化存储在硬盘中
+	//arraylist存储当前所有account账号，并且序列化存储在硬盘中,启动Manager时自动加载
+	private ArrayList<BFICAccountImpl> accountList = null;
 	//构造singleton单例模式
 	private static BFICManager managerSingleton = null;
 	//构造器私有化，只有内部方法才可调用， 保证singleton的实现
@@ -30,7 +33,7 @@ public class BFICManager {
 		//BFICManager实例化
 		BFICManager systemManager = BFICManager.getInstance();
 		//加载已保存到硬盘的对象（反序列化）
-		ArrayList<BFICAccountImpl> accountList = readLocal();
+		systemManager.readLocalAccount();
 		//前往操作界面
 		systemManager.operatingInterface(scan);
 	}
@@ -50,7 +53,7 @@ public class BFICManager {
 					registerAccount(scan); //转到创建账号
 					break;
 				case "2":
-					logInAccount(scan); //转到登录账号
+					loginAccount(scan); //转到登录账号
 					break;
 				case "0":
 					break;
@@ -61,8 +64,8 @@ public class BFICManager {
 	
 	
 	//加载文件中已创建对象
-	private ArrayList<BFICAccountImpl> readLocal(){
-		
+	private void readLocalAccount() throws ClassNotFoundException, IOException{
+		accountList = BFICUtilities.load();
 	}
 	
 	
@@ -71,12 +74,16 @@ public class BFICManager {
 		String prompt = null;
 		String corporate = null;//法人
 		String email = null;
-		String verifyNumber = null; //Id or License
+		String verifyNumber = null;//Id or License
+		String password = null;
 		
 		System.out.println("Register Interface");
 		//scan corporate
 		prompt = "Input the corporate/person name of this account:";
 		corporate = BFICUtilities.scanStr(scan, prompt);
+		//scan password
+		prompt = "Input the password of this account";
+		password = BFICUtilities.scanStr(scan, prompt);
 		//scan email
 		prompt = "Input your email for concat:";
 		email = BFICUtilities.scanEmail(scan, prompt);
@@ -87,16 +94,71 @@ public class BFICManager {
 		Boolean verification = BFICUtilities.checkInfor(corporate, email, verifyNumber);
 		//验证通过则创建账户，不通过则提示失败
 		if (verification) {
-			BFICAccount 
+			BFICAccountImpl newAccount = new BFICAccountImpl(corporate, password, email, verifyNumber);
+			accountList.add(newAccount);
+			BFICUtilities.save(accountList);
+			System.out.println("Your new account have been saved");
+		} else {
+			System.out.println("Failed to create an account");
 		}
 	}
 	
 	
-	//登录账号
-	private void logInAccount(Scanner scan) {
-		//本应连接到MySQL数据库，但是因为时间紧促，只好先写个java代替
-		
+	//验证登录
+	private BFICAccountImpl verifyLogin(Scanner scan) {
+		BFICAccount account = null;
+		String prompt = null;
+		String corporate = null;
+		String password = null;
+		//输入用户名和密码：
+		prompt = "Input your corporate:";
+		corporate = BFICUtilities.scanStr(scan, prompt);
+		prompt = "Input your password:";
+		password = BFICUtilities.scanStr(scan, prompt);
+		//遍历，找到用户名相同的account验证password是否相同
+		for (int index = 0; index < accountList.size(); index++) 
+		{
+			account = accountList.get(index);
+			if (account.getName() == corporate) {
+				if (account.checkPassword(password)) {
+					System.out.println(account.getName() + ", successfully login");
+					return (BFICAccountImpl) account;
+				} 
+			} else {
+				System.out.println("No such account.Please check and try again!");
+				return null;
+			}
+		}
+		System.out.println("Password wrong. Please check again!");
+		return null;
 	}
 	
 	
+	//登录账号(二级主操作界面)
+	private void loginAccount(Scanner scan) {
+		//本应连接到MySQL数据库，但是因为时间紧促，只好先写个java代替
+		String prompt = null;
+		String command = null;
+		//验证登录信息
+		BFICAccountImpl account = verifyLogin(scan);
+		if (account != null) {
+			prompt = "Enter your operation:\n"
+				+ "Pause \'1\' to verify an item      Pause \'2\' to build a new chain      Pause \'0\' to quit";
+			command = BFICUtilities.scanString(scan, prompt);
+			switch (command) {
+				case "1" :
+					//转到account的verify方法，验证并生成新block
+					account.verify();
+					break;
+				case "2" :
+					//转到account本身的createInitialBlock方法
+					account.createInitialBlock();
+					break;
+				case "0" :
+					System.out.println("Return to main page");
+					break;
+			}
+		}
+	}
+		
 }
